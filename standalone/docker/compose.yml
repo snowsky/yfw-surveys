@@ -1,0 +1,36 @@
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: standalone/docker/api.Dockerfile
+    env_file: [../../.env]
+    ports:
+      - "${API_PORT:-8001}:8001"
+    volumes:
+      - surveys_db:/app
+
+  ui:
+    build:
+      context: ../..
+      dockerfile: standalone/docker/ui.Dockerfile
+    ports:
+      - "${UI_PORT:-3001}:80"
+    depends_on: [api]
+
+# Uncomment to use Postgres instead of SQLite
+# db:
+#   image: postgres:16-alpine
+#   environment:
+#     POSTGRES_USER: ${POSTGRES_USER:-surveys}
+#     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-surveys}
+#     POSTGRES_DB: ${POSTGRES_DB:-surveys}
+#   volumes:
+#     - surveys_db_data:/var/lib/postgresql/data
+#   healthcheck:
+#     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-surveys}"]
+#     interval: 5s
+#     retries: 5
+
+volumes:
+  surveys_db:
+# surveys_db_data:
