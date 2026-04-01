@@ -271,7 +271,11 @@ def _create_tenant_reminders(
         User as TenantUser,
     )
     from core.services.tenant_database_manager import tenant_db_manager
-    ui_base_url = getattr(config, "UI_BASE_URL", "http://localhost:8080")
+    try:
+        from config import config
+        ui_base_url = getattr(config, "UI_BASE_URL", "http://localhost:8080")
+    except ImportError:
+        ui_base_url = "http://localhost:8080"
     survey_url = f"{ui_base_url}/surveys/{survey_slug}"
 
     for tenant_id in tenant_ids:
