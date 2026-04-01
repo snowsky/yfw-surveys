@@ -3,7 +3,8 @@ Authenticated survey management endpoints.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from shared.compat import get_current_user
@@ -15,10 +16,10 @@ from shared.schemas.surveys import (
     QuestionUpdate,
     ResponseOut,
     ResponseSummary,
-    SurveyCreate,
     SurveyOut,
     SurveySummary,
     SurveyUpdate,
+    ShareInternalRequest,
 )
 from shared.services.survey_service import (
     add_question,
@@ -183,3 +184,125 @@ def export_csv(
             "Content-Disposition": f'attachment; filename="survey-{survey_id}-responses.csv"'
         },
     )
+
+
+@router.post("/{survey_id}/share-internal")
+async def share_internal(
+    survey_id: str,
+    body: ShareInternalRequest,
+    background_tasks: BackgroundTasks,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Share a survey internally to specific tenants."""
+    survey = _survey_or_404(survey_id, db)
+
+    # 1. Authorization check in master database
+    try:
+        from core.models.database import SessionLocal as MasterSessionLocal
+        from core.models.models import user_tenant_association
+    except ImportError:
+        raise HTTPException(
+            status_code=501,
+            detail="Internal sharing is only available when running as a plugin.",
+        )
+
+    master_db = MasterSessionLocal()
+    try:
+        for tenant_id in body.tenant_ids:
+            # Check if user is an admin in this tenant
+            membership = master_db.execute(
+                select(user_tenant_association.c.role).where(
+                    and_(
+                        user_tenant_association.c.user_id == current_user.id,
+                        user_tenant_association.c.tenant_id == tenant_id,
+                    )
+                )
+            ).fetchone()
+
+            if not membership or membership.role != "admin":
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"You are not an admin in organization {tenant_id}",
+                )
+    finally:
+        master_db.close()
+
+    # 2. Run reminder creation in background
+    background_tasks.add_task(
+        _create_tenant_reminders,
+        survey_id=survey.id,
+        survey_title=survey.title,
+        survey_slug=survey.slug,
+        tenant_ids=body.tenant_ids,
+        created_by_id=current_user.id,
+        due_date=body.due_date,
+    )
+
+    return {"message": "Sharing process started", "status": "processing"}
+
+
+def _create_tenant_reminders(
+    survey_id: str,
+    survey_title: str,
+    survey_slug: str,
+    tenant_ids: List[int],
+    created_by_id: int,
+    due_date: datetime | None,
+):
+    """Background task to create reminders for all users in target tenants."""
+    from core.models.models_per_tenant import (
+        RecurrencePattern,
+        Reminder,
+        ReminderPriority,
+        ReminderStatus,
+        User as TenantUser,
+    )
+    from core.services.tenant_database_manager import tenant_db_manager
+    try:
+        from config import config
+        ui_base_url = getattr(config, "UI_BASE_URL", "http://localhost:8080")
+    except ImportError:
+        ui_base_url = "http://localhost:8081" # Standalone default
+
+    from datetime import datetime as dt_class
+    survey_url = f"{ui_base_url}/surveys/{survey_slug}"
+
+    for tenant_id in tenant_ids:
+        try:
+            SessionLocal_tenant = tenant_db_manager.get_tenant_session(tenant_id)
+            tenant_db = SessionLocal_tenant()
+            try:
+                # Find all active users in this tenant
+                users = tenant_db.query(TenantUser).filter(TenantUser.is_active == True).all()
+
+                # Get user ID in this tenant — if the master user id doesn't exist, we skip or use a system user
+                # But per requirements, the admin is in these orgs, so the ID should match.
+                # However, for safety, we'll verify or just use a valid tenant user as creator.
+                tenant_admin = tenant_db.query(TenantUser).filter(TenantUser.id == created_by_id).first()
+                if not tenant_admin:
+                    # Fallback to the first active user if we can't find the admin in this tenant
+                    tenant_admin = tenant_db.query(TenantUser).filter(TenantUser.is_active == True).first()
+
+                if not tenant_admin:
+                    logging.warning(f"No active users found in tenant {tenant_id}, skipping reminders.")
+                    return
+
+                for user in users:
+                    reminder = Reminder(
+                        title=f"Survey: {survey_title}",
+                        description=f"Please complete this survey: {survey_url}",
+                        due_date=due_date or datetime.now(timezone.utc),
+                        status=ReminderStatus.PENDING,
+                        priority=ReminderPriority.MEDIUM,
+                        created_by_id=tenant_admin.id,
+                        assigned_to_id=user.id,
+                        recurrence_pattern=RecurrencePattern.NONE,
+                    )
+                    tenant_db.add(reminder)
+                tenant_db.commit()
+            finally:
+                tenant_db.close()
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to create reminders for tenant {tenant_id}: {e}")

@@ -4,17 +4,21 @@
  * the YFW plugin UI directory and just work.
  */
 import React, { useEffect, useState } from "react";
+import { ShareInternalModal } from "./ShareInternalModal";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface Survey {
   id: string;
   title: string;
+  description?: string;
   slug: string;
   is_active: boolean;
+  allow_anonymous: boolean;
   created_at: string;
   expires_at?: string;
   response_count: number;
+  questions: Question[];
 }
 
 interface Question {
@@ -132,6 +136,8 @@ function CreateSurveyModal({ onClose, onCreate }: {
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [allowAnonymous, setAllowAnonymous] = useState(true);
+  const [expiresAt, setExpiresAt] = useState("");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -155,7 +161,13 @@ function CreateSurveyModal({ onClose, onCreate }: {
     try {
       const survey = await apiFetch<Survey>(API_PREFIX, {
         method: "POST",
-        body: JSON.stringify({ title, description, questions }),
+        body: JSON.stringify({
+          title,
+          description,
+          allow_anonymous: allowAnonymous,
+          expires_at: expiresAt || null,
+          questions,
+        }),
       });
       onCreate(survey);
     } catch (e: unknown) {
@@ -174,6 +186,22 @@ function CreateSurveyModal({ onClose, onCreate }: {
         <input style={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Survey title" />
         <label style={styles.label}>Description</label>
         <textarea style={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
+
+        <div style={{ ...styles.row, marginBottom: 12, gap: 16 }}>
+          <label style={{ ...styles.label, display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}>
+            <input type="checkbox" checked={allowAnonymous} onChange={(e) => setAllowAnonymous(e.target.checked)} />
+            Allow Anonymous Responses
+          </label>
+          <div style={{ flex: 1 }}>
+            <label style={styles.label}>Close Date (Optional)</label>
+            <input
+              style={{ ...styles.input, marginBottom: 0 }}
+              type="datetime-local"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+            />
+          </div>
+        </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <strong style={{ fontSize: 14 }}>Questions</strong>
@@ -232,6 +260,136 @@ function CreateSurveyModal({ onClose, onCreate }: {
   );
 }
 
+// ── EditSurveyModal ────────────────────────────────────────────────────────────
+
+function EditSurveyModal({ survey, onClose, onUpdate }: {
+  survey: Survey;
+  onClose: () => void;
+  onUpdate: (survey: Survey) => void;
+}) {
+  const [title, setTitle] = useState(survey.title);
+  const [description, setDescription] = useState(survey.description || "");
+  const [allowAnonymous, setAllowAnonymous] = useState(survey.allow_anonymous);
+  const [expiresAt, setExpiresAt] = useState(survey.expires_at ? survey.expires_at.substring(0, 16) : "");
+  const [questions, setQuestions] = useState<Question[]>(survey.questions || []);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const addQuestion = () =>
+    setQuestions((qs) => [
+      ...qs,
+      { question_type: "text", label: "", required: false, order_index: qs.length },
+    ]);
+
+  const removeQuestion = (i: number) =>
+    setQuestions((qs) => qs.filter((_, idx) => idx !== i));
+
+  const updateQuestion = (i: number, patch: Partial<Question>) =>
+    setQuestions((qs) => qs.map((q, idx) => (idx === i ? { ...q, ...patch } : q)));
+
+  const handleSubmit = async () => {
+    if (!title.trim()) { setError("Title is required"); return; }
+    setSaving(true);
+    setError("");
+    try {
+      const updated = await apiFetch<Survey>(`${API_PREFIX}/${survey.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          title,
+          description,
+          allow_anonymous: allowAnonymous,
+          expires_at: expiresAt || null,
+          questions,
+        }),
+      });
+      onUpdate(updated);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Failed to update survey");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={styles.modal} onClick={onClose}>
+      <div style={styles.modalBox} onClick={(e) => e.stopPropagation()}>
+        <h2 style={{ marginTop: 0 }}>Edit Survey</h2>
+        {error && <p style={styles.error}>{error}</p>}
+        <label style={styles.label}>Title *</label>
+        <input style={styles.input} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Survey title" />
+        <label style={styles.label}>Description</label>
+        <textarea style={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional description" />
+
+        <div style={{ ...styles.row, marginBottom: 12, gap: 16 }}>
+          <label style={{ ...styles.label, display: "flex", alignItems: "center", gap: 6, marginBottom: 0 }}>
+            <input type="checkbox" checked={allowAnonymous} onChange={(e) => setAllowAnonymous(e.target.checked)} />
+            Allow Anonymous Responses
+          </label>
+          <div style={{ flex: 1 }}>
+            <label style={styles.label}>Close Date (Optional)</label>
+            <input
+              style={{ ...styles.input, marginBottom: 0 }}
+              type="datetime-local"
+              value={expiresAt}
+              onChange={(e) => setExpiresAt(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <strong style={{ fontSize: 14 }}>Questions</strong>
+          <button style={{ ...styles.btn, ...styles.btnSecondary }} onClick={addQuestion}>+ Add Question</button>
+        </div>
+
+        {questions.map((q, i) => (
+          <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, marginBottom: 8 }}>
+            <div style={styles.row}>
+              <select
+                style={{ ...styles.input, marginBottom: 0, width: "auto" }}
+                value={q.question_type}
+                onChange={(e) => updateQuestion(i, { question_type: e.target.value })}
+              >
+                <option value="text">Short text</option>
+                <option value="paragraph">Paragraph</option>
+                <option value="multiple_choice">Multiple choice</option>
+                <option value="checkbox">Checkboxes</option>
+                <option value="rating">Rating</option>
+                <option value="boolean">Yes / No</option>
+              </select>
+              <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, whiteSpace: "nowrap" }}>
+                <input type="checkbox" checked={q.required} onChange={(e) => updateQuestion(i, { required: e.target.checked })} />
+                Required
+              </label>
+              <button style={{ ...styles.btn, ...styles.btnDanger, padding: "4px 10px" }} onClick={() => removeQuestion(i)}>✕</button>
+            </div>
+            <input
+              style={{ ...styles.input, marginTop: 8 }}
+              value={q.label}
+              onChange={(e) => updateQuestion(i, { label: e.target.value })}
+              placeholder={`Question ${i + 1} text`}
+            />
+            {(q.question_type === "multiple_choice" || q.question_type === "checkbox") && (
+              <textarea
+                style={{ ...styles.textarea, marginBottom: 0 }}
+                value={Array.isArray(q.options) ? (q.options as string[]).join("\n") : ""}
+                onChange={(e) => updateQuestion(i, { options: e.target.value.split("\n").filter(Boolean) })}
+                placeholder="One option per line"
+              />
+            )}
+          </div>
+        ))}
+
+        <div style={{ ...styles.row, justifyContent: "flex-end", marginTop: 16 }}>
+          <button style={{ ...styles.btn, ...styles.btnSecondary }} onClick={onClose}>Cancel</button>
+          <button style={{ ...styles.btn, ...styles.btnPrimary }} onClick={handleSubmit} disabled={saving}>
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── SurveysPage ────────────────────────────────────────────────────────────────
 
 export default function SurveysPage() {
@@ -239,6 +397,8 @@ export default function SurveysPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [editSurvey, setEditSurvey] = useState<Survey | null>(null);
+  const [shareSurvey, setShareSurvey] = useState<Survey | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -326,6 +486,19 @@ export default function SurveysPage() {
             <div style={styles.row}>
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
+                onClick={() => setShareSurvey(s)}
+                title="Share internally and create reminders"
+              >
+                Internal Share
+              </button>
+              <button
+                style={{ ...styles.btn, ...styles.btnSecondary }}
+                onClick={() => setEditSurvey(s)}
+              >
+                Edit
+              </button>
+              <button
+                style={{ ...styles.btn, ...styles.btnSecondary, color: s.is_active ? "#dc2626" : "#2563eb" }}
                 onClick={() => toggleActive(s)}
               >
                 {s.is_active ? "Deactivate" : "Activate"}
@@ -348,6 +521,24 @@ export default function SurveysPage() {
             setSurveys((ss) => [survey, ...ss]);
             setShowCreate(false);
           }}
+        />
+      )}
+
+      {editSurvey && (
+        <EditSurveyModal
+          survey={editSurvey}
+          onClose={() => setEditSurvey(null)}
+          onUpdate={(updated) => {
+            setSurveys((ss) => ss.map((s) => (s.id === updated.id ? updated : s)));
+            setEditSurvey(null);
+          }}
+        />
+      )}
+
+      {shareSurvey && (
+        <ShareInternalModal
+          survey={shareSurvey}
+          onClose={() => setShareSurvey(null)}
         />
       )}
     </div>

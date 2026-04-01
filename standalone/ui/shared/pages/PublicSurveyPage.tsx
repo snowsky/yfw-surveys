@@ -111,12 +111,19 @@ export default function PublicSurveyPage() {
     publicApi.getSurvey(slug).then(setSurvey).catch((e: Error) => setLoadError(e.message));
   }, [slug]);
 
+  const isExpired = survey?.expires_at && new Date(survey.expires_at) < new Date();
+
   const setAnswer = (qid: string, val: unknown) =>
     setAnswers((prev) => ({ ...prev, [qid]: val }));
 
   const handleSubmit = async () => {
     if (!survey || !slug) return;
     setError("");
+    // Check email if Not Anonymous
+    if (!survey.allow_anonymous && !email.trim()) {
+      setError("Email is required for this survey.");
+      return;
+    }
     // Check required fields
     const missing = survey.questions.filter((q) => q.required && !answers[q.id]);
     if (missing.length > 0) {
@@ -151,6 +158,18 @@ export default function PublicSurveyPage() {
     return <div style={s.page}><div style={s.card}><p style={{ color: "#6b7280" }}>Loading…</p></div></div>;
   }
 
+  if (isExpired) {
+    return (
+      <div style={s.page}>
+        <div style={{ ...s.card, textAlign: "center" }}>
+          <p style={{ fontSize: 40, margin: "0 0 16px" }}>🔒</p>
+          <h2 style={s.title}>Survey Closed</h2>
+          <p style={s.desc}>This survey is no longer accepting responses.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (submitted) {
     return (
       <div style={s.page}>
@@ -171,12 +190,19 @@ export default function PublicSurveyPage() {
         <h1 style={s.title}>{survey.title}</h1>
         {survey.description && <p style={s.desc}>{survey.description}</p>}
 
-        {survey.allow_anonymous && (
-          <div style={{ marginBottom: 24 }}>
-            <label style={s.label}>Email <span style={{ color: "#9ca3af", fontWeight: 400 }}>(optional)</span></label>
-            <input style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          </div>
-        )}
+        <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 24, marginBottom: 24 }}>
+          <label style={s.label}>
+            Email Address
+            {!survey.allow_anonymous && <span style={s.required}>*</span>}
+          </label>
+          <input
+            style={s.input}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+          />
+        </div>
 
         {survey.questions.map((q) => (
           <div key={q.id} style={s.qBlock}>

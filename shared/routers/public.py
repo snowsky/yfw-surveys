@@ -38,6 +38,13 @@ def submit(slug: str, body: SurveySubmit, db: Session = Depends(get_db)):
     """Submit a response to a survey."""
     survey = _active_survey_or_error(slug, db)
 
+    # Enforce non-anonymous surveys
+    if not survey.allow_anonymous and not body.respondent_email:
+        raise HTTPException(
+            status_code=400,
+            detail="This survey is not anonymous. Please provide your email address.",
+        )
+
     # Validate required questions are answered
     question_ids = {q.id for q in survey.questions}
     required_ids = {q.id for q in survey.questions if q.required}

@@ -77,8 +77,8 @@ export default function SurveysListPage() {
             <div>
               <div style={s.cardTitle}>{survey.title}</div>
               <div style={s.cardMeta}>
-                <span style={{ ...s.badge, ...(survey.is_active ? s.badgeActive : s.badgeInactive) }}>
-                  {survey.is_active ? "Active" : "Inactive"}
+                <span style={{ ...s.badge, ...(survey.is_active && (!survey.expires_at || new Date(survey.expires_at) > new Date()) ? s.badgeActive : s.badgeInactive) }}>
+                  {survey.is_active ? (survey.expires_at && new Date(survey.expires_at) < new Date() ? "Closed" : "Active") : "Inactive"}
                 </span>
                 <span>{survey.response_count} response{survey.response_count !== 1 ? "s" : ""}</span>
                 <a href={publicLink(survey.slug)} target="_blank" rel="noreferrer" style={s.link}>

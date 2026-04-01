@@ -141,3 +141,10 @@ class ResponseSummary(BaseModel):
     submitted_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ── Sharing & Reminders ────────────────────────────────────────────────────────
+
+class ShareInternalRequest(BaseModel):
+    tenant_ids: List[int]
+    due_date: Optional[datetime] = None
