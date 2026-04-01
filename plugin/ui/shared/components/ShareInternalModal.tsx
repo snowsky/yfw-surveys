@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { apiFetch } from "../api";
+import { surveysApi } from "../api";
 
 // This hook might only exist in the main app (plugin mode)
 // We use a dynamic import or an optional prop to handle this
@@ -89,12 +89,9 @@ export function ShareInternalModal({ survey, onClose, organizations, isLoadingOr
     setSuccess("");
 
     try {
-      await apiFetch(`/${survey.id}/share-internal`, {
-        method: "POST",
-        body: JSON.stringify({ 
-          tenant_ids: selectedOrgs,
-          due_date: dueDate || null
-        }),
+      await surveysApi.shareInternal(survey.id, { 
+        tenant_ids: selectedOrgs,
+        due_date: dueDate || null
       });
       setSuccess("Survey successfully shared with selected organizations!");
       setTimeout(onClose, 2000);

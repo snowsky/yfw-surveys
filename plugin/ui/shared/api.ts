@@ -83,6 +83,11 @@ export interface ResponseOut {
   answers: AnswerOut[];
 }
 
+export interface ShareInternalRequest {
+  tenant_ids: number[];
+  due_date: string | null;
+}
+
 /**
  * Core fetch utility that handles both standalone and plugin environments.
  */
@@ -138,6 +143,12 @@ export const surveysApi = {
 
   getResponse: (surveyId: string, responseId: string) =>
     apiFetch<ResponseOut>(`${API_PREFIX}/${surveyId}/responses/${responseId}`),
+
+  shareInternal: (surveyId: string, body: ShareInternalRequest) =>
+    apiFetch<{ message: string; status: string }>(`${API_PREFIX}/${surveyId}/share-internal`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   exportUrl: (surveyId: string) => {
     const isStandalone = !!localStorage.getItem(STORAGE_KEYS.apiKey);

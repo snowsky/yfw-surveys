@@ -6,8 +6,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShareInternalModal } from "../components/ShareInternalModal";
-import { surveysApi, apiFetch, Survey, Question } from "../api";
-import { API_PREFIX } from "../config";
+import { surveysApi, Survey, Question } from "../api";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
@@ -122,15 +121,18 @@ function CreateSurveyModal({ onClose, onCreate }: {
     setSaving(true);
     setError("");
     try {
-      const survey = await apiFetch<Survey>(API_PREFIX, {
-        method: "POST",
-        body: JSON.stringify({
-          title,
-          description,
-          allow_anonymous: allowAnonymous,
-          expires_at: expiresAt || null,
-          questions,
-        }),
+      const survey = await surveysApi.create({
+        title,
+        description,
+        allow_anonymous: allowAnonymous,
+        expires_at: expiresAt || undefined,
+        questions: questions.map(q => ({
+          question_type: q.question_type,
+          label: q.label,
+          required: q.required,
+          order_index: q.order_index,
+          options: q.options,
+        })),
       });
       onCreate(survey);
     } catch (e: unknown) {
@@ -250,15 +252,11 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
     setSaving(true);
     setError("");
     try {
-      const updated = await apiFetch<Survey>(`${API_PREFIX}/${survey.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          title,
-          description,
-          allow_anonymous: allowAnonymous,
-          expires_at: expiresAt || null,
-          questions,
-        }),
+      const updated = await surveysApi.update(survey.id, {
+        title,
+        description,
+        allow_anonymous: allowAnonymous,
+        expires_at: expiresAt || undefined,
       });
       onUpdate(updated);
     } catch (e: unknown) {
@@ -358,7 +356,7 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
   const load = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<Survey[]>(API_PREFIX);
+      const data = await surveysApi.list();
       setSurveys(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load surveys");
@@ -371,9 +369,8 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
 
   const toggleActive = async (survey: Survey) => {
     try {
-      const updated = await apiFetch<Survey>(`${API_PREFIX}/${survey.id}`, {
-        method: "PUT",
-        body: JSON.stringify({ is_active: !survey.is_active }),
+      const updated = await surveysApi.update(survey.id, {
+        is_active: !survey.is_active
       });
       setSurveys((ss) => ss.map((s) => (s.id === updated.id ? updated : s)));
     } catch (e: unknown) {
@@ -384,7 +381,7 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
   const deleteSurvey = async (id: string) => {
     if (!confirm("Delete this survey and all its responses?")) return;
     try {
-      await apiFetch(`${API_PREFIX}/${id}`, { method: "DELETE" });
+      await surveysApi.delete(id);
       setSurveys((ss) => ss.filter((s) => s.id !== id));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Failed to delete");
