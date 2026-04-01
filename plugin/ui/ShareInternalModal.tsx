@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch } from "./api";
 import { useOrganizations, Organization } from "@/hooks/useOrganizations";
 
 const API_PREFIX = "/api/v1/surveys";
