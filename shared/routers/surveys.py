@@ -2,6 +2,8 @@
 Authenticated survey management endpoints.
 """
 from __future__ import annotations
+import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy import and_, select
@@ -260,13 +262,7 @@ def _create_tenant_reminders(
         User as TenantUser,
     )
     from core.services.tenant_database_manager import tenant_db_manager
-    try:
-        from config import config
-        ui_base_url = getattr(config, "UI_BASE_URL", "http://localhost:8080")
-    except ImportError:
-        ui_base_url = "http://localhost:8081" # Standalone default
-
-    from datetime import datetime as dt_class
+    ui_base_url = getattr(config, "UI_BASE_URL", "http://localhost:8080")
     survey_url = f"{ui_base_url}/surveys/{survey_slug}"
 
     for tenant_id in tenant_ids:
@@ -305,5 +301,4 @@ def _create_tenant_reminders(
             finally:
                 tenant_db.close()
         except Exception as e:
-            import logging
             logging.error(f"Failed to create reminders for tenant {tenant_id}: {e}")
