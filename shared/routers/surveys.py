@@ -213,7 +213,16 @@ async def share_internal(
     master_db = MasterSessionLocal()
     try:
         for tenant_id in body.tenant_ids:
-            # Check if user is an admin in this tenant
+            # Primary tenant: role is stored directly on the user object
+            if tenant_id == current_user.tenant_id:
+                if current_user.role != "admin":
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"You are not an admin in organization {tenant_id}",
+                    )
+                continue
+
+            # Additional tenants: look up in user_tenant_association
             membership = master_db.execute(
                 select(user_tenant_association.c.role).where(
                     and_(
