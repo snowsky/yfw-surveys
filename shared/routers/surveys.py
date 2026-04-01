@@ -16,6 +16,7 @@ from shared.schemas.surveys import (
     QuestionUpdate,
     ResponseOut,
     ResponseSummary,
+    SurveyCreate,
     SurveyOut,
     SurveySummary,
     SurveyUpdate,

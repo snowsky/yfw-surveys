@@ -41,6 +41,11 @@
       "path": "/api/v1/surveys/public/{slug}/submit",
       "methods": ["POST"],
       "description": "Submit a survey response (no auth)"
+    },
+    {
+      "path": "/api/v1/surveys/{id}/share-internal",
+      "methods": ["POST"],
+      "description": "Share a survey internally (authenticated)"
     }
   ],
   "features": ["survey_builder", "response_collection", "csv_export"]
