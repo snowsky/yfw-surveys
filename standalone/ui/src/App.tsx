@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { USE_STANDALONE_SETUP } from "@shared/config";
 import { loadSetupConfig } from "@shared/setup";
 import SetupPage from "@shared/pages/SetupPage";
-import SurveysListPage from "@shared/pages/SurveysListPage";
+import SurveysPage from "@shared/pages/SurveysPage";
 import SurveyEditorPage from "@shared/pages/SurveyEditorPage";
 import SurveyResponsesPage from "@shared/pages/SurveyResponsesPage";
 import PublicSurveyPage from "@shared/pages/PublicSurveyPage";
@@ -23,7 +23,7 @@ export default function App() {
         {/* Public survey route — no auth */}
         <Route path="/surveys/:slug" element={<PublicSurveyPage />} />
         {/* Authenticated management routes */}
-        <Route path="/" element={<RequireSetup><SurveysListPage /></RequireSetup>} />
+        <Route path="/" element={<RequireSetup><SurveysPage /></RequireSetup>} />
         <Route path="/editor/:surveyId?" element={<RequireSetup><SurveyEditorPage /></RequireSetup>} />
         <Route path="/responses/:surveyId" element={<RequireSetup><SurveyResponsesPage /></RequireSetup>} />
         <Route path="*" element={<Navigate to="/" replace />} />
