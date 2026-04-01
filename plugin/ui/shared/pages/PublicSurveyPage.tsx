@@ -41,6 +41,14 @@ const s: Record<string, React.CSSProperties> = {
   ratingRow: { display: "flex", gap: 8, flexWrap: "wrap" as const },
   ratingBtn: { padding: "10px 16px", borderRadius: 6, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 15, fontWeight: 500, background: "#fff", flex: 1, minWidth: 44 },
   ratingBtnActive: { background: "#2563eb", color: "#fff", borderColor: "#2563eb" },
+  footer: {
+    marginTop: 32,
+    paddingTop: 16,
+    borderTop: "1px solid #f3f4f6",
+    textAlign: "center" as const,
+    fontSize: 13,
+    color: "#9ca3af",
+  },
 };
 
 // ── Components ─────────────────────────────────────────────────────────────────
@@ -228,6 +236,9 @@ export default function PublicSurveyPage() {
             <h2 style={s.title}>Thank you!</h2>
             <p style={s.desc}>Your response has been successfully recorded.</p>
           </div>
+          <div style={s.footer}>
+            Powered by <strong>YourFinanceWORKS</strong>
+          </div>
         </div>
       </div>
     );
@@ -280,6 +291,9 @@ export default function PublicSurveyPage() {
           >
             {submitting ? "Submitting…" : "Submit Response"}
           </button>
+        </div>
+        <div style={s.footer}>
+          Powered by <strong>YourFinanceWORKS</strong>
         </div>
       </div>
     </div>
