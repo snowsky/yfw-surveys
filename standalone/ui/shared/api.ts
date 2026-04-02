@@ -29,6 +29,7 @@ export interface Survey {
   expires_at?: string;
   questions: Question[];
   response_count: number;
+  company_name?: string;
 }
 
 export interface SurveySummary {

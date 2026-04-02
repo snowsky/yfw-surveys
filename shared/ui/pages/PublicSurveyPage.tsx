@@ -20,6 +20,7 @@ interface Survey {
   allow_anonymous: boolean;
   questions: Question[];
   expires_at?: string;
+  company_name?: string;
 }
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
@@ -246,7 +247,7 @@ export default function PublicSurveyPage() {
             <p style={s.desc}>Your response has been successfully recorded.</p>
           </div>
           <div style={s.footer}>
-            Powered by <strong>YourFinanceWORKS</strong>
+            Powered by <strong>{survey.company_name || "YourFinanceWORKS"}</strong>
           </div>
         </div>
       </div>
@@ -311,7 +312,7 @@ export default function PublicSurveyPage() {
           </button>
         </div>
         <div style={s.footer}>
-          Powered by <strong>YourFinanceWORKS</strong>
+          Powered by <strong>{survey.company_name || "YourFinanceWORKS"}</strong>
         </div>
       </div>
     </div>
