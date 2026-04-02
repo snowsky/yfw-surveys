@@ -12,20 +12,17 @@ try:
     from core.models.models import Tenant as _Tenant
 
     def get_company_name() -> str:
-        """Return the current tenant's company name, or fall back to app default."""
+        """Return the current tenant's company name (call only from authenticated endpoints)."""
         tenant_id = _get_tenant_context()
         if not tenant_id:
-            return "YourFinanceWORKS"
-        master_db = _get_master_db()
-        db = next(master_db)
+            return ""
+        gen = _get_master_db()
+        db = next(gen)
         try:
             tenant = db.query(_Tenant).filter(_Tenant.id == tenant_id).first()
-            return tenant.name if (tenant and tenant.name) else "YourFinanceWORKS"
+            return tenant.name if (tenant and tenant.name) else ""
         finally:
-            try:
-                next(master_db)
-            except StopIteration:
-                pass
+            db.close()
 
     STANDALONE = False
 
@@ -35,7 +32,7 @@ except ImportError:
     from standalone.auth import get_current_user    # noqa: F401
 
     def get_company_name() -> str:
-        return _os.environ.get("COMPANY_NAME", "YourFinanceWORKS")
+        return _os.environ.get("COMPANY_NAME", "")
 
     STANDALONE = True
 

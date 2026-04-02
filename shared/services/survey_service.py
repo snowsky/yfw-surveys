@@ -29,7 +29,12 @@ def _generate_slug(title: str) -> str:
 
 # ── Survey CRUD ────────────────────────────────────────────────────────────────
 
-def create_survey(db: Session, data: SurveyCreate, created_by: Optional[str] = None) -> Survey:
+def create_survey(
+    db: Session,
+    data: SurveyCreate,
+    created_by: Optional[str] = None,
+    company_name: str = "",
+) -> Survey:
     slug = _generate_slug(data.title)
     survey = Survey(
         title=data.title,
@@ -38,6 +43,7 @@ def create_survey(db: Session, data: SurveyCreate, created_by: Optional[str] = N
         allow_anonymous=data.allow_anonymous,
         expires_at=data.expires_at,
         created_by=created_by,
+        company_name=company_name or None,
     )
     db.add(survey)
     db.flush()
