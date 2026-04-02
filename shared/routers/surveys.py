@@ -10,7 +10,7 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 try:
-    from ..compat import get_company_name, get_current_user
+    from ..compat import get_current_user
     from ..database import get_db
     from ..models.surveys import Question
     from ..schemas.surveys import (
@@ -40,7 +40,7 @@ try:
         response_count,
     )
 except (ImportError, ValueError):
-    from shared.compat import get_company_name, get_current_user
+    from shared.compat import get_current_user
     from shared.database import get_db
     from shared.models.surveys import Question
     from shared.schemas.surveys import (
@@ -94,7 +94,7 @@ def _question_or_404(question_id: str, survey_id: str, db: Session):
 @router.post("", response_model=SurveyOut, status_code=201)
 def create(body: SurveyCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
     created_by = getattr(user, "email", None)
-    survey = create_survey(db, body, created_by=created_by, company_name=get_company_name())
+    survey = create_survey(db, body, created_by=created_by)
     survey.response_count = 0
     return survey
 

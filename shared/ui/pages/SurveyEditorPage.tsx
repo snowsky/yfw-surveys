@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { surveysApi, Survey, Question, QuestionCreate } from "../api";
+import { surveysApi, getCompanyName, Survey, Question, QuestionCreate } from "../api";
 
 const QUESTION_TYPES = [
   { value: "text", label: "Short text" },
@@ -86,7 +86,8 @@ export default function SurveyEditorPage() {
       if (isEdit && surveyId) {
         await surveysApi.update(surveyId, payload);
       } else {
-        await surveysApi.create({ ...payload, questions });
+        const company_name = await getCompanyName();
+        await surveysApi.create({ ...payload, questions, company_name });
       }
       navigate("/");
     } catch (e: unknown) {
