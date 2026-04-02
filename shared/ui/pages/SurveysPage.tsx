@@ -1,43 +1,17 @@
 /**
- * Plugin page — Survey management dashboard.
- * Self-contained: no imports from shared/ so this file can be dropped into
- * the YFW plugin UI directory and just work.
+ * Unified Surveys Management Page.
+ * Shared between plugin and standalone modes.
  */
+
 import React, { useEffect, useState } from "react";
-import { ShareInternalModal } from "./ShareInternalModal";
-
-// ── Types ──────────────────────────────────────────────────────────────────────
-
-interface Survey {
-  id: string;
-  title: string;
-  description?: string;
-  slug: string;
-  is_active: boolean;
-  allow_anonymous: boolean;
-  created_at: string;
-  expires_at?: string;
-  response_count: number;
-  questions: Question[];
-}
-
-interface Question {
-  id?: string;
-  question_type: string;
-  label: string;
-  required: boolean;
-  order_index: number;
-  options?: string[] | Record<string, unknown> | null;
-}
-
-const API_PREFIX = "/api/v1/surveys";
-
-import { apiFetch } from "./api";
+import { useNavigate } from "react-router-dom";
+import { ShareInternalModal } from "../components/ShareInternalModal";
+import { surveysApi, Survey, Question } from "../api";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles: Record<string, React.CSSProperties> = {
-  container: { fontFamily: "system-ui, sans-serif", padding: "24px", maxWidth: 900 },
+  container: { fontFamily: "system-ui, sans-serif", padding: "24px", maxWidth: 900, margin: "0 auto" },
   header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
   h1: { margin: 0, fontSize: 22, fontWeight: 600 },
   btn: {
@@ -60,6 +34,7 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "space-between",
     alignItems: "center",
     background: "#fff",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
   },
   badge: {
     display: "inline-block",
@@ -115,7 +90,7 @@ const styles: Record<string, React.CSSProperties> = {
   link: { color: "#2563eb", textDecoration: "none", fontSize: 13 },
 };
 
-// ── CreateSurveyModal ──────────────────────────────────────────────────────────
+// ── Modals ─────────────────────────────────────────────────────────────────────
 
 function CreateSurveyModal({ onClose, onCreate }: {
   onClose: () => void;
@@ -132,7 +107,7 @@ function CreateSurveyModal({ onClose, onCreate }: {
   const addQuestion = () =>
     setQuestions((qs) => [
       ...qs,
-      { question_type: "text", label: "", required: false, order_index: qs.length },
+      { question_type: "text", label: "", required: false, order_index: qs.length } as Question,
     ]);
 
   const removeQuestion = (i: number) =>
@@ -146,15 +121,18 @@ function CreateSurveyModal({ onClose, onCreate }: {
     setSaving(true);
     setError("");
     try {
-      const survey = await apiFetch<Survey>(API_PREFIX, {
-        method: "POST",
-        body: JSON.stringify({
-          title,
-          description,
-          allow_anonymous: allowAnonymous,
-          expires_at: expiresAt || null,
-          questions,
-        }),
+      const survey = await surveysApi.create({
+        title,
+        description,
+        allow_anonymous: allowAnonymous,
+        expires_at: expiresAt || undefined,
+        questions: questions.map(q => ({
+          question_type: q.question_type,
+          label: q.label,
+          required: q.required,
+          order_index: q.order_index,
+          options: q.options,
+        })),
       });
       onCreate(survey);
     } catch (e: unknown) {
@@ -230,9 +208,6 @@ function CreateSurveyModal({ onClose, onCreate }: {
                 placeholder="One option per line"
               />
             )}
-            {q.question_type === "rating" && (
-              <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>Rating scale: 1–5</p>
-            )}
           </div>
         ))}
 
@@ -246,8 +221,6 @@ function CreateSurveyModal({ onClose, onCreate }: {
     </div>
   );
 }
-
-// ── EditSurveyModal ────────────────────────────────────────────────────────────
 
 function EditSurveyModal({ survey, onClose, onUpdate }: {
   survey: Survey;
@@ -265,7 +238,7 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
   const addQuestion = () =>
     setQuestions((qs) => [
       ...qs,
-      { question_type: "text", label: "", required: false, order_index: qs.length },
+      { question_type: "text", label: "", required: false, order_index: qs.length } as Question,
     ]);
 
   const removeQuestion = (i: number) =>
@@ -279,15 +252,11 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
     setSaving(true);
     setError("");
     try {
-      const updated = await apiFetch<Survey>(`${API_PREFIX}/${survey.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          title,
-          description,
-          allow_anonymous: allowAnonymous,
-          expires_at: expiresAt || null,
-          questions,
-        }),
+      const updated = await surveysApi.update(survey.id, {
+        title,
+        description,
+        allow_anonymous: allowAnonymous,
+        expires_at: expiresAt || undefined,
       });
       onUpdate(updated);
     } catch (e: unknown) {
@@ -327,7 +296,6 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
           <strong style={{ fontSize: 14 }}>Questions</strong>
           <button style={{ ...styles.btn, ...styles.btnSecondary }} onClick={addQuestion}>+ Add Question</button>
         </div>
-
         {questions.map((q, i) => (
           <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12, marginBottom: 8 }}>
             <div style={styles.row}>
@@ -355,14 +323,6 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
               onChange={(e) => updateQuestion(i, { label: e.target.value })}
               placeholder={`Question ${i + 1} text`}
             />
-            {(q.question_type === "multiple_choice" || q.question_type === "checkbox") && (
-              <textarea
-                style={{ ...styles.textarea, marginBottom: 0 }}
-                value={Array.isArray(q.options) ? (q.options as string[]).join("\n") : ""}
-                onChange={(e) => updateQuestion(i, { options: e.target.value.split("\n").filter(Boolean) })}
-                placeholder="One option per line"
-              />
-            )}
           </div>
         ))}
 
@@ -377,9 +337,15 @@ function EditSurveyModal({ survey, onClose, onUpdate }: {
   );
 }
 
-// ── SurveysPage ────────────────────────────────────────────────────────────────
+// ── Main Page Component ────────────────────────────────────────────────────────
 
-export default function SurveysPage() {
+interface SurveysPageProps {
+  organizations?: any[];
+  isLoadingOrganizations?: boolean;
+}
+
+export default function SurveysPage({ organizations, isLoadingOrganizations }: SurveysPageProps) {
+  const navigate = useNavigate();
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -390,7 +356,7 @@ export default function SurveysPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await apiFetch<Survey[]>(API_PREFIX);
+      const data = await surveysApi.list();
       setSurveys(data);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to load surveys");
@@ -403,9 +369,8 @@ export default function SurveysPage() {
 
   const toggleActive = async (survey: Survey) => {
     try {
-      const updated = await apiFetch<Survey>(`${API_PREFIX}/${survey.id}`, {
-        method: "PUT",
-        body: JSON.stringify({ is_active: !survey.is_active }),
+      const updated = await surveysApi.update(survey.id, {
+        is_active: !survey.is_active
       });
       setSurveys((ss) => ss.map((s) => (s.id === updated.id ? updated : s)));
     } catch (e: unknown) {
@@ -416,7 +381,7 @@ export default function SurveysPage() {
   const deleteSurvey = async (id: string) => {
     if (!confirm("Delete this survey and all its responses?")) return;
     try {
-      await apiFetch(`${API_PREFIX}/${id}`, { method: "DELETE" });
+      await surveysApi.delete(id);
       setSurveys((ss) => ss.filter((s) => s.id !== id));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Failed to delete");
@@ -425,6 +390,9 @@ export default function SurveysPage() {
 
   const publicLink = (slug: string) =>
     `${window.location.origin}/surveys/${slug}`;
+
+  // Check if we are in plugin mode (if organizations prop is provided)
+  const isPluginMode = !!organizations;
 
   return (
     <div style={styles.container}>
@@ -438,13 +406,13 @@ export default function SurveysPage() {
       {error && <p style={styles.error}>{error}</p>}
 
       {loading ? (
-        <p style={{ color: "#6b7280" }}>Loading…</p>
+        <p style={{ color: "#6b7280" }}>Loading surveys…</p>
       ) : surveys.length === 0 ? (
         <p style={styles.empty}>No surveys yet. Create your first one!</p>
       ) : (
         surveys.map((s) => (
           <div key={s.id} style={styles.card}>
-            <div>
+            <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, marginBottom: 4 }}>{s.title}</div>
               <div style={{ fontSize: 13, color: "#6b7280" }}>
                 <span style={{ ...styles.badge, ...(s.is_active ? styles.badgeActive : styles.badgeInactive) }}>
@@ -453,42 +421,32 @@ export default function SurveysPage() {
                 {" · "}
                 {s.response_count} response{s.response_count !== 1 ? "s" : ""}
                 {" · "}
-                <a
-                  href={publicLink(s.slug)}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={styles.link}
-                >
-                  Share link ↗
-                </a>
-                {" · "}
-                <a
-                  href={`${API_PREFIX}/${s.id}/export`}
-                  style={styles.link}
-                >
-                  Export CSV
+                <a href={publicLink(s.slug)} target="_blank" rel="noreferrer" style={styles.link}>
+                  Public Link ↗
                 </a>
               </div>
             </div>
-            <div style={styles.row}>
+            <div style={{ ...styles.row, flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={() => setShareSurvey(s)}
-                title="Share internally and create reminders"
+                onClick={() => navigate(`/surveys/responses/${s.id}`)}
               >
-                Internal Share
+                Responses
               </button>
+              {isPluginMode && (
+                <button
+                  style={{ ...styles.btn, ...styles.btnSecondary }}
+                  onClick={() => setShareSurvey(s)}
+                  title="Share internally with organizations"
+                >
+                  Share
+                </button>
+              )}
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
                 onClick={() => setEditSurvey(s)}
               >
                 Edit
-              </button>
-              <button
-                style={{ ...styles.btn, ...styles.btnSecondary, color: s.is_active ? "#dc2626" : "#2563eb" }}
-                onClick={() => toggleActive(s)}
-              >
-                {s.is_active ? "Deactivate" : "Activate"}
               </button>
               <button
                 style={{ ...styles.btn, ...styles.btnDanger }}
@@ -526,6 +484,8 @@ export default function SurveysPage() {
         <ShareInternalModal
           survey={shareSurvey}
           onClose={() => setShareSurvey(null)}
+          organizations={organizations}
+          isLoadingOrganizations={isLoadingOrganizations}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { PUBLIC_PREFIX } from "../config";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -21,8 +22,6 @@ interface Survey {
   expires_at?: string;
 }
 
-const API_PREFIX = "/api/v1/surveys/public";
-
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const s: Record<string, React.CSSProperties> = {
@@ -42,6 +41,23 @@ const s: Record<string, React.CSSProperties> = {
   ratingRow: { display: "flex", gap: 8, flexWrap: "wrap" as const },
   ratingBtn: { padding: "10px 16px", borderRadius: 6, border: "1px solid #d1d5db", cursor: "pointer", fontSize: 15, fontWeight: 500, background: "#fff", flex: 1, minWidth: 44 },
   ratingBtnActive: { background: "#2563eb", color: "#fff", borderColor: "#2563eb" },
+  footer: {
+    marginTop: 32,
+    paddingTop: 16,
+    borderTop: "1px solid #f3f4f6",
+    textAlign: "center" as const,
+    fontSize: 13,
+    color: "#9ca3af",
+  },
+  closeDate: {
+    fontSize: 13,
+    color: "#dc2626",
+    fontWeight: 600,
+    marginBottom: 20,
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  },
 };
 
 // ── Components ─────────────────────────────────────────────────────────────────
@@ -133,7 +149,7 @@ export default function PublicSurveyPage() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`${API_PREFIX}/${slug}`)
+    fetch(`${PUBLIC_PREFIX}/${slug}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({ detail: res.statusText }));
@@ -164,7 +180,7 @@ export default function PublicSurveyPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_PREFIX}/${slug}/submit`, {
+      const res = await fetch(`${PUBLIC_PREFIX}/${slug}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -229,6 +245,9 @@ export default function PublicSurveyPage() {
             <h2 style={s.title}>Thank you!</h2>
             <p style={s.desc}>Your response has been successfully recorded.</p>
           </div>
+          <div style={s.footer}>
+            Powered by <strong>YourFinanceWORKS</strong>
+          </div>
         </div>
       </div>
     );
@@ -239,6 +258,15 @@ export default function PublicSurveyPage() {
       <div style={s.card}>
         <h1 style={s.title}>{survey.title}</h1>
         {survey.description && <p style={s.desc}>{survey.description}</p>}
+        {survey.expires_at && (
+          <div style={s.closeDate}>
+            <span>🕒 Closes:</span>
+            {new Date(survey.expires_at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </div>
+        )}
 
         <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 24 }}>
           <div style={s.qBlock}>
@@ -278,11 +306,12 @@ export default function PublicSurveyPage() {
             style={s.btn}
             onClick={handleSubmit}
             disabled={submitting}
-            onMouseOver={(e) => (e.currentTarget.style.background = "#1d4ed8")}
-            onMouseOut={(e) => (e.currentTarget.style.background = "#2563eb")}
           >
             {submitting ? "Submitting…" : "Submit Response"}
           </button>
+        </div>
+        <div style={s.footer}>
+          Powered by <strong>YourFinanceWORKS</strong>
         </div>
       </div>
     </div>
