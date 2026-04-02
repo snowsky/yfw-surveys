@@ -12,8 +12,12 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from shared.models.surveys import Answer, Question, Survey, SurveyResponse
-from shared.schemas.surveys import AnswerSubmit, QuestionCreate, SurveyCreate, SurveyUpdate
+try:
+    from ..models.surveys import Answer, Question, Survey, SurveyResponse
+    from ..schemas.surveys import AnswerSubmit, QuestionCreate, SurveyCreate, SurveyUpdate
+except (ImportError, ValueError):
+    from shared.models.surveys import Answer, Question, Survey, SurveyResponse
+    from shared.schemas.surveys import AnswerSubmit, QuestionCreate, SurveyCreate, SurveyUpdate
 
 
 def _generate_slug(title: str) -> str:

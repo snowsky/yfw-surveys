@@ -38,7 +38,10 @@ def create_tables():
     """Create all survey tables. Call once at startup."""
     _init_engine()
     # Import models so they register with Base
-    import shared.models.surveys  # noqa: F401
+    try:
+        from .models import surveys  # noqa: F401
+    except (ImportError, ValueError):
+        import shared.models.surveys  # noqa: F401
     Base.metadata.create_all(bind=_engine)
 
 

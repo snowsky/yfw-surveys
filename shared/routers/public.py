@@ -9,9 +9,14 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from shared.database import get_db
-from shared.schemas.surveys import PublicSurveyOut, SubmitResult, SurveySubmit
-from shared.services.survey_service import get_survey_by_slug, submit_response
+try:
+    from ..database import get_db
+    from ..schemas.surveys import PublicSurveyOut, SubmitResult, SurveySubmit
+    from ..services.survey_service import get_survey_by_slug, submit_response
+except (ImportError, ValueError):
+    from shared.database import get_db
+    from shared.schemas.surveys import PublicSurveyOut, SubmitResult, SurveySubmit
+    from shared.services.survey_service import get_survey_by_slug, submit_response
 
 router = APIRouter()
 

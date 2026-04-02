@@ -9,35 +9,66 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
-from shared.compat import get_current_user
-from shared.database import get_db
-from shared.models.surveys import Question
-from shared.schemas.surveys import (
-    QuestionCreate,
-    QuestionOut,
-    QuestionUpdate,
-    ResponseOut,
-    ResponseSummary,
-    SurveyCreate,
-    SurveyOut,
-    SurveySummary,
-    SurveyUpdate,
-    ShareInternalRequest,
-)
-from shared.services.survey_service import (
-    add_question,
-    create_survey,
-    delete_question,
-    delete_survey,
-    export_responses_csv,
-    get_response,
-    get_responses,
-    get_survey,
-    list_surveys,
-    response_count,
-    update_question,
-    update_survey,
-)
+try:
+    from ..compat import get_current_user
+    from ..database import get_db
+    from ..models.surveys import Question
+    from ..schemas.surveys import (
+        QuestionCreate,
+        QuestionOut,
+        QuestionUpdate,
+        ResponseOut,
+        ResponseSummary,
+        SurveyCreate,
+        SurveyOut,
+        SurveySummary,
+        SurveyUpdate,
+        ShareInternalRequest,
+    )
+    from ..services.survey_service import (
+        add_question,
+        create_survey,
+        delete_question,
+        delete_survey,
+        export_responses_csv,
+        get_response,
+        get_responses,
+        get_survey,
+        list_surveys,
+        update_question,
+        update_survey,
+        response_count,
+    )
+except (ImportError, ValueError):
+    from shared.compat import get_current_user
+    from shared.database import get_db
+    from shared.models.surveys import Question
+    from shared.schemas.surveys import (
+        QuestionCreate,
+        QuestionOut,
+        QuestionUpdate,
+        ResponseOut,
+        ResponseSummary,
+        SurveyCreate,
+        SurveyOut,
+        SurveySummary,
+        SurveyUpdate,
+        ShareInternalRequest,
+    )
+    from shared.services.survey_service import (
+        add_question,
+        create_survey,
+        delete_question,
+        delete_survey,
+        export_responses_csv,
+        get_response,
+        get_responses,
+        get_survey,
+        list_surveys,
+        update_question,
+        update_survey,
+        response_count,
+    )
 
 router = APIRouter()
 
