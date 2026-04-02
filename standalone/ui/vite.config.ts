@@ -11,7 +11,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@shared": path.resolve(__dirname, "../../plugin/ui/shared"),
+      "@shared": path.resolve(__dirname, "../../shared/ui"),
     },
   },
   server: {

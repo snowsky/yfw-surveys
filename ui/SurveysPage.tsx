@@ -4,7 +4,7 @@
  */
 
 import React from "react";
-import SharedSurveysPage from "./shared/pages/SurveysPage";
+import SharedSurveysPage from "../shared/ui/pages/SurveysPage";
 import { useOrganizations } from "@/hooks/useOrganizations";
 
 export default function SurveysPage() {

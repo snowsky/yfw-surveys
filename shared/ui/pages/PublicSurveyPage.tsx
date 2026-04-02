@@ -49,6 +49,15 @@ const s: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: "#9ca3af",
   },
+  closeDate: {
+    fontSize: 13,
+    color: "#dc2626",
+    fontWeight: 600,
+    marginBottom: 20,
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+  },
 };
 
 // ── Components ─────────────────────────────────────────────────────────────────
@@ -249,6 +258,15 @@ export default function PublicSurveyPage() {
       <div style={s.card}>
         <h1 style={s.title}>{survey.title}</h1>
         {survey.description && <p style={s.desc}>{survey.description}</p>}
+        {survey.expires_at && (
+          <div style={s.closeDate}>
+            <span>🕒 Closes:</span>
+            {new Date(survey.expires_at).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </div>
+        )}
 
         <div style={{ borderTop: "1px solid #f3f4f6", paddingTop: 24 }}>
           <div style={s.qBlock}>
