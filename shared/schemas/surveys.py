@@ -93,7 +93,9 @@ class PublicSurveyOut(BaseModel):
     title: str
     description: Optional[str] = None
     allow_anonymous: bool
+    expires_at: Optional[datetime] = None
     questions: List[QuestionOut] = []
+    company_name: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

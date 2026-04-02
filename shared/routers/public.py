@@ -10,10 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 try:
+    from ..compat import get_company_name
     from ..database import get_db
     from ..schemas.surveys import PublicSurveyOut, SubmitResult, SurveySubmit
     from ..services.survey_service import get_survey_by_slug, submit_response
 except (ImportError, ValueError):
+    from shared.compat import get_company_name
     from shared.database import get_db
     from shared.schemas.surveys import PublicSurveyOut, SubmitResult, SurveySubmit
     from shared.services.survey_service import get_survey_by_slug, submit_response
@@ -35,7 +37,9 @@ def _active_survey_or_error(slug: str, db: Session):
 @router.get("/{slug}", response_model=PublicSurveyOut)
 def get_public_survey(slug: str, db: Session = Depends(get_db)):
     """Return the survey form for respondents."""
-    return _active_survey_or_error(slug, db)
+    survey = _active_survey_or_error(slug, db)
+    out = PublicSurveyOut.model_validate(survey)
+    return out.model_copy(update={"company_name": get_company_name()})
 
 
 @router.post("/{slug}/submit", response_model=SubmitResult, status_code=201)
