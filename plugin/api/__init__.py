@@ -4,8 +4,12 @@ YFW plugin entry point.
 Called by the YourFinanceWORKS plugin loader at startup:
     register_plugin(app, mcp_registry=..., feature_gate=...)
 """
-from shared.database import create_tables
-from shared.routers import public_router, surveys_router
+try:
+    from ...shared.database import create_tables
+    from ...shared.routers import public_router, surveys_router
+except (ImportError, ValueError):
+    from shared.database import create_tables
+    from shared.routers import public_router, surveys_router
 
 PLUGIN_PREFIX = "/api/v1/surveys"
 PUBLIC_PREFIX = "/api/v1/surveys/public"
