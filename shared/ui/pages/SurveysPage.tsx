@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShareInternalModal } from "../components/ShareInternalModal";
-import { surveysApi, Survey, Question } from "../api";
+import { surveysApi, Survey, SurveySummary, Question } from "../api";
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
@@ -346,12 +346,12 @@ interface SurveysPageProps {
 
 export default function SurveysPage({ organizations, isLoadingOrganizations }: SurveysPageProps) {
   const navigate = useNavigate();
-  const [surveys, setSurveys] = useState<Survey[]>([]);
+  const [surveys, setSurveys] = useState<SurveySummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [editSurvey, setEditSurvey] = useState<Survey | null>(null);
-  const [shareSurvey, setShareSurvey] = useState<Survey | null>(null);
+  const [shareSurvey, setShareSurvey] = useState<SurveySummary | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -367,12 +367,12 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
 
   useEffect(() => { load(); }, []);
 
-  const toggleActive = async (survey: Survey) => {
+  const toggleActive = async (survey: SurveySummary) => {
     try {
       const updated = await surveysApi.update(survey.id, {
         is_active: !survey.is_active
       });
-      setSurveys((ss) => ss.map((s) => (s.id === updated.id ? updated : s)));
+      setSurveys((ss) => ss.map((s) => (s.id === updated.id ? { ...s, is_active: updated.is_active } : s)));
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : "Failed to update");
     }
@@ -429,7 +429,7 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
             <div style={{ ...styles.row, flexWrap: "wrap", justifyContent: "flex-end" }}>
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={() => navigate(`/surveys/responses/${s.id}`)}
+                onClick={() => navigate(isPluginMode ? `/surveys/responses/${s.id}` : `/responses/${s.id}`)}
               >
                 Responses
               </button>
@@ -444,7 +444,10 @@ export default function SurveysPage({ organizations, isLoadingOrganizations }: S
               )}
               <button
                 style={{ ...styles.btn, ...styles.btnSecondary }}
-                onClick={() => setEditSurvey(s)}
+                onClick={async () => {
+                  const full = await surveysApi.get(s.id);
+                  setEditSurvey(full);
+                }}
               >
                 Edit
               </button>

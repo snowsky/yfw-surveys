@@ -4,8 +4,8 @@ import type { PluginRouteConfig, PluginNavItem } from '@/types/plugin-routes';
 // Lazy-load the main surveys page
 // This correctly points to SurveysPage.tsx in the same folder
 const SurveysPage = React.lazy(() => import('./SurveysPage'));
-const PublicSurveyPage = React.lazy(() => import('../shared/ui/pages/PublicSurveyPage'));
-const SurveyResponsesPage = React.lazy(() => import('../shared/ui/pages/SurveyResponsesPage'));
+const PublicSurveyPage = React.lazy(() => import('../../shared/ui/pages/PublicSurveyPage'));
+const SurveyResponsesPage = React.lazy(() => import('../../shared/ui/pages/SurveyResponsesPage'));
 
 /**
  * Route configuration for the Surveys plugin.
