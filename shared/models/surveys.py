@@ -9,7 +9,10 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, JSON, String, Text
 from sqlalchemy.orm import relationship
 
-from shared.database import Base
+try:
+    from ..database import Base
+except (ImportError, ValueError):
+    from shared.database import Base
 
 
 def _uuid() -> str:
