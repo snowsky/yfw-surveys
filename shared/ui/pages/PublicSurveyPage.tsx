@@ -150,7 +150,7 @@ export default function PublicSurveyPage() {
 
   useEffect(() => {
     if (!slug) return;
-    fetch(`${PUBLIC_PREFIX}/${slug}`)
+    fetch(`${PUBLIC_PREFIX}/${slug}`, { cache: "no-store" })
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({ detail: res.statusText }));

@@ -35,7 +35,7 @@ def _init_engine():
 
 
 def create_tables():
-    """Create all survey tables. Call once at startup."""
+    """Create all survey tables and apply any additive migrations. Call once at startup."""
     _init_engine()
     # Import models so they register with Base
     try:
@@ -43,6 +43,17 @@ def create_tables():
     except (ImportError, ValueError):
         import shared.models.surveys  # noqa: F401
     Base.metadata.create_all(bind=_engine)
+    _migrate(_engine)
+
+
+def _migrate(engine):
+    """Apply additive schema migrations (idempotent)."""
+    from sqlalchemy import inspect, text
+    inspector = inspect(engine)
+    existing = {col["name"] for col in inspector.get_columns("surveys")}
+    with engine.begin() as conn:
+        if "company_name" not in existing:
+            conn.execute(text("ALTER TABLE surveys ADD COLUMN company_name VARCHAR(255)"))
 
 
 def get_db() -> Generator[Optional[Session], None, None]:

@@ -47,6 +47,7 @@ class SurveyCreate(BaseModel):
     allow_anonymous: bool = True
     expires_at: Optional[datetime] = None
     questions: List[QuestionCreate] = []
+    company_name: Optional[str] = None
 
 
 class SurveyUpdate(BaseModel):

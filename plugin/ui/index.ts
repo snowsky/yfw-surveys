@@ -1,11 +1,12 @@
 import React from 'react';
-import type { PluginRouteConfig, PluginNavItem } from '@/types/plugin-routes';
+import type { PluginRouteConfig, PluginNavItem, PluginPublicPage } from '@/types/plugin-routes';
 
 // Lazy-load the main surveys page
 // This correctly points to SurveysPage.tsx in the same folder
 const SurveysPage = React.lazy(() => import('./SurveysPage'));
 const PublicSurveyPage = React.lazy(() => import('../../shared/ui/pages/PublicSurveyPage'));
 const SurveyResponsesPage = React.lazy(() => import('../../shared/ui/pages/SurveyResponsesPage'));
+const SurveyPortalPage = React.lazy(() => import('./SurveyPortalPage'));
 
 /**
  * Route configuration for the Surveys plugin.
@@ -35,6 +36,17 @@ export const pluginRoutes: PluginRouteConfig[] = [
     label: 'Survey Responses',
   },
 ];
+
+/**
+ * Public portal page — accessible at /p/surveys/.
+ * Access is gated by the tenant's public-access settings (disabled by default).
+ */
+export const publicPage: PluginPublicPage = {
+  pluginId: 'surveys',
+  pluginName: 'Surveys',
+  path: '/p/surveys',
+  component: SurveyPortalPage,
+};
 
 /**
  * Sidebar navigation item definition.

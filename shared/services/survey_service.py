@@ -38,6 +38,7 @@ def create_survey(db: Session, data: SurveyCreate, created_by: Optional[str] = N
         allow_anonymous=data.allow_anonymous,
         expires_at=data.expires_at,
         created_by=created_by,
+        company_name=data.company_name or None,
     )
     db.add(survey)
     db.flush()

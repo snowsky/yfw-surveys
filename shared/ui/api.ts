@@ -54,6 +54,7 @@ export interface SurveyCreate {
   allow_anonymous?: boolean;
   expires_at?: string;
   questions?: QuestionCreate[];
+  company_name?: string;
 }
 
 export interface SurveyUpdate {
@@ -119,6 +120,23 @@ export async function apiFetch<T>(path: string, opts: RequestInit = {}): Promise
 
   if (res.status === 204) return undefined as unknown as T;
   return res.json();
+}
+
+/**
+ * Fetch the current company name from the host app's settings (plugin mode only).
+ * Returns empty string if unavailable (standalone mode or not authenticated).
+ */
+export async function getCompanyName(): Promise<string> {
+  try {
+    const isStandalone = !!localStorage.getItem(STORAGE_KEYS.apiKey);
+    if (isStandalone) return "";
+    const res = await fetch("/api/v1/settings", { cache: "no-store" });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data?.company_info?.name ?? "";
+  } catch {
+    return "";
+  }
 }
 
 /**
