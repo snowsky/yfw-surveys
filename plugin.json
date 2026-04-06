@@ -48,5 +48,10 @@
       "description": "Share a survey internally (authenticated)"
     }
   ],
-  "features": ["survey_builder", "response_collection", "csv_export"]
+  "features": ["survey_builder", "response_collection", "csv_export"],
+  "public_page": {
+    "path": "/p/surveys",
+    "label": "Survey Portal",
+    "description": "Browse and submit public surveys"
+  }
 }

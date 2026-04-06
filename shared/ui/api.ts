@@ -130,7 +130,7 @@ export async function getCompanyName(): Promise<string> {
   try {
     const isStandalone = !!localStorage.getItem(STORAGE_KEYS.apiKey);
     if (isStandalone) return "";
-    const res = await fetch("/api/v1/settings");
+    const res = await fetch("/api/v1/settings", { cache: "no-store" });
     if (!res.ok) return "";
     const data = await res.json();
     return data?.company_info?.name ?? "";
